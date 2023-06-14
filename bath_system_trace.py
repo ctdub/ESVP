@@ -15,8 +15,11 @@ param = {'cavity freq': 1600 * k2eV,
 bathParam = {'field size': 5,
              'bath size': 5,
              'max bath freq': 878 * k2eV,
-             'vibration lifetime': 20  #pico seconds
+             'vibration lifetime': 20,  # (ps)
+             'Q': 6  # Cavity quality factor,
              }
+
+field_En = np.linspace(param['cavity freq'])
 
 hessian = np.zeros((2, 2))
 hessian[0, 0] = param['cavity freq'] ** 2
@@ -38,12 +41,13 @@ t1 = np.sum(u[0, :] * polDispl * np.sqrt(v) * np.sin(np.tile(timeAU, (2, 1)).T *
 t2 = np.sum(u[0, :] * polDispl * (np.sin(np.tile(timeAU, (2, 1)).T * np.sqrt(v) / 2) ** 2), axis=1)
 
 ncav_t = 1 / (2 * param['cavity freq']) * np.square(t1) + 2 * param['cavity freq'] * np.square(t2)
-ncavBeta = 1 / param['cavity freq'] * np.square(u[0, :]).dot(np.sqrt(v)) + param['cavity freq'] * np.square(u[0, :]).dot(1 / np.sqrt(v))
+ncavBeta = 1 / param['cavity freq'] * np.square(u[0, :]).dot(np.sqrt(v)) + param['cavity freq'] * np.square(
+    u[0, :]).dot(1 / np.sqrt(v))
 ncav = ncav_t + 0.25 * ncavBeta - 0.5
 
-
 ncav1 = 1 / (2 * param['cavity freq']) * np.square(t1) + 2 * param['cavity freq'] * np.square(t2)
-ncavBeta = 1 / param['cavity freq'] * np.square(u[0, :]).dot(np.sqrt(v)) + param['cavity freq'] * np.square(u[0, :]).dot(1/np.sqrt(v))
+ncavBeta = 1 / param['cavity freq'] * np.square(u[0, :]).dot(np.sqrt(v)) + param['cavity freq'] * np.square(
+    u[0, :]).dot(1 / np.sqrt(v))
 ncav2 = ncav1 + 0.25 * ncavBeta - 0.5
 
 tv1 = np.sum(u[1, :] * polDispl * np.sqrt(v) * np.sin(np.tile(timeAU, (2, 1)).T * np.sqrt(v)), axis=1)
@@ -51,7 +55,8 @@ tv2 = np.sum(u[1, :] * polDispl * (np.sin(np.tile(timeAU, (2, 1)).T * np.sqrt(v)
 
 nvib_t = 1 / (2 * param['vibration freq']) * np.square(tv1) + 2 * param['vibration freq'] * np.square(tv2)
 nvib_t2 = - 2 * param['vibration freq'] * tv2
-nvibBeta = 1 / param['vibration freq'] * np.square(u[1, :]).dot(np.sqrt(v)) + param['vibration freq'] * np.square(u[1, :]).dot(1 / np.sqrt(v))
+nvibBeta = 1 / param['vibration freq'] * np.square(u[1, :]).dot(np.sqrt(v)) + param['vibration freq'] * np.square(
+    u[1, :]).dot(1 / np.sqrt(v))
 nvib = nvib_t2 + 0.25 * nvibBeta - 0.5 + param['Huang-Rhys']
 # 4 * param['Huang-Rhys'] * param['vibration freq'] ** 2 *
 # plt.plot(time, ncav, color='r')
