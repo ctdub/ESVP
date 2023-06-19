@@ -63,7 +63,9 @@ def oc_dynamics(pr, v, u, energies, polDispl, subsystem='cavity'):
         stop = pr['bath size'] + pr['field size'] + 2
         subSize = pr['bath size']
     if subsystem not in {'cavity', 'vibration', 'field', 'bath'}:
-        raise ValueError('invalid subsystem name')
+        if not isinstance(subsystem, str):
+            raise ValueError('invalid variable type for subsystem')
+        raise ValueError('invalid subsystem name: ' + subsystem + '\n Subsystem can be cavity, vibration, field, or bath')
     if subSize == 0:
         proj = np.zeros(v.size)[np.newaxis, :]
         subEn = [1]

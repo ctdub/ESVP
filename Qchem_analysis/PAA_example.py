@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib
+matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 import QC_analysis as QC
 
@@ -9,6 +11,8 @@ def normalize(arr):
     return normed
 
 
+ps2AU = 1/2.4189e-5
+
 # creates an object that will contain all of the information from the QChem output file
 dat = QC.ImportData(['PAA_geoopt_freq.out', 'PAA_force.out'])
 dat.import_freq_data(file_number=0, mw_hessian=True)
@@ -17,22 +21,21 @@ dat.diag_mw_hessian()
 dat.calc_HR()
 
 E0 = 345  # nm
-electric_energy = 45.5640 / E0
-cycles = 1600
-ps2AU = 1/2.4189e-5
-totalTime = 0.65  # ps
+totalTime = 1  # ps
 totalSteps = 20000
-# totalTimeAU = totalTime * ps2AU
-totalTimeAU = cycles * 2 * np.pi / electric_energy
-timeRangeAU = np.linspace(0, totalTimeAU, totalSteps)
-T = 200  # Kelvin
+timeRangeAU = np.linspace(0, totalTime * ps2AU, totalSteps)
+T = 300  # Kelvin
 inhomBroadening = 200  # cm-1
-freqAxis, spec = QC.abs_spec(E0, dat.mw_frequencies, dat.hr, T, inhomBroadening, timeRangeAU)
+freqAxis, spec_hot = QC.abs_spec(E0, dat.mw_frequencies, dat.hr, T, inhomBroadening, timeRangeAU)
+T = 10
+inhomBroadening = 10  # cm-1
+freqAxis, spec_frozen = QC.abs_spec(E0, dat.mw_frequencies, dat.hr, T, inhomBroadening, timeRangeAU)
 
 plt.figure()
-
-plt.figure()
-plt.plot(freqAxis, normalize(spec), 'r')
+exp_abs = np.loadtxt('PAA_abs.txt')
+plt.plot(1e7/exp_abs[61:,0], normalize(exp_abs[61:, 1]), color='k')
+plt.plot(freqAxis, normalize(spec_hot), 'r')
+plt.plot(freqAxis, normalize(spec_frozen), 'tab:blue')
 plt.ylabel(r'Intensity', fontsize=24)
 plt.xlabel(r'Wavenumbers / $\mathrm{cm}^{-1}$', fontsize=20)
 plt.xticks(fontsize=20)
@@ -45,3 +48,4 @@ plt.gca().xaxis.set_tick_params(width=2)
 plt.gca().yaxis.set_tick_params(width=2)
 plt.gca().spines['top'].set_visible(False)
 plt.gca().spines['right'].set_visible(False)
+plt.show()

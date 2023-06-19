@@ -44,7 +44,7 @@ def find_geometry(file_name):
     with open(file_name, mode='r', encoding='utf-8') as f:
         with mmap.mmap(f.fileno(), length=0, access=mmap.ACCESS_READ) as mmap_f:
             for line in iter(mmap_f.readline, b''):
-                if count_on and number > 0 and b'\n' == line:
+                if count_on and number > 0 and b'\r\n' == line:
                     break
                 if stdMolCount and b'------' in line and number > 0:
                     stdMolCount = False
@@ -163,6 +163,15 @@ class ImportData:
                         self.mw_hessian = np.delete(self.mw_hessian, zeros_delete, axis=1)
 
                     if record_mw_hes:
+                        if n == np.ceil(self.norm_size/6):
+                            record_mw_hes = False
+                            mw_hessian = False
+                            self.mw_hessian = mw_hessian_parts[0]
+                            for part in range(1, mw_hessian_parts.shape[0]):
+                                self.mw_hessian = np.concatenate((self.mw_hessian, mw_hessian_parts[part]), axis=1)
+                            zeros_delete = list(
+                                range(self.mw_hessian.shape[1] - (self.norm_size % 6), self.mw_hessian.shape[1]))
+                            self.mw_hessian = np.delete(self.mw_hessian, zeros_delete, axis=1)
                         if i >= 0:
                             if i == self.norm_size:
                                 n += 1
@@ -171,6 +180,7 @@ class ImportData:
                             splt = split(line)
                             mw_hessian_parts[n, i, 0:splt.size] = splt
                         i += 1
+
 
                     if b'TransDip' in line:
                         record_norm = False
@@ -202,7 +212,6 @@ class ImportData:
                     if b'Mass-Weighted Hessian Matrix:' in line and mw_hessian:
                         i = -2
                         record_mw_hes = True
-
                     if b'Raman Active:' in line:  # initializes recording for normal modes
                         i = -1
                         record_norm = True
@@ -303,11 +312,11 @@ def abs_spec(vert_trans, frequencies, huang_rhys, temperature, sigma_inhom, time
     eigVals = freqAU ** 2
     sigmaAU = sigma_inhom * kToAU
     Kb = 3.168 * 10 ** -6  # Boltzman constant in atomic units
-    coth = 1 / np.tanh(np.sqrt(eigVals) / 2 / Kb / temperature)
     osc = np.zeros(time.size, dtype=complex)
     for i, wV in enumerate(freqAU[6:]):
+        coth = 1 / np.tanh(wV / 2 / Kb / temperature)
         omegaTime = wV * time
-        osc += huang_rhys[i] * (coth[i] * (np.cos(omegaTime) - 1) - 1j * np.sin(omegaTime))
+        osc += huang_rhys[i] * (coth * (np.cos(omegaTime) - 1) - 1j * np.sin(omegaTime))
     osc += -1j * EVert * time - (time * sigmaAU) ** 2 / 2
     rspn = np.exp(osc)
 
@@ -315,4 +324,4 @@ def abs_spec(vert_trans, frequencies, huang_rhys, temperature, sigma_inhom, time
     num_neg_points = int(time.size / 2)
     spectra = full_spectra[num_neg_points:]
     freq_axis = -1 * (2 * np.pi) / (time[-1] * 4.56 * 10 ** -6) * np.arange(-time.size / 2 + 1, 1, 1)
-    return freq_axis, spectra.real, rspn
+    return freq_axis, spectra.real
